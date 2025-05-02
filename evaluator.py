@@ -48,8 +48,16 @@ def normalize_output(output):
 def run_python_code(data):
     """Runs the provided Python code against test cases and revises version if misclassified."""
 
+    print("inside run_python_code")
+
     source_code, lang, testcases = data["source_code"], data['lang'], eval(data["testcases"])  # Convert test cases from string to list
     results = []
+
+    print("-------------------- (run python)")
+    print("source_code -> ", source_code)
+    print("lang -> ", lang)
+    print("testcases -> ", testcases)
+    print("-------------------- (run python)")
 
     filtered_testcases = []
     for testcase in testcases:
@@ -57,11 +65,14 @@ def run_python_code(data):
             continue
         filtered_testcases.append(testcase)
     testcases = filtered_testcases
+
+    print("filtered testcases -> ", filtered_testcases)
     if len(testcases) == 0:
         print("All testcases skipped. No execution needed.")
         return []
 
     tried_versions = [lang, "python2" if lang == "python3" else "python3"]
+    print("tried_versions -> ", tried_versions)
     final_lang = None
     success = False
 
@@ -83,8 +94,14 @@ def run_python_code(data):
 
             if attempt_lang == "python2":
                 actual_output, error_output = execute_command(["python2", temp_filename], input_data=input_data)
+                print("python2 -> ")
+                print("a_o -> ", actual_output)
+                print("err_o -> ", error_output)
             else:
                 actual_output, error_output = execute_command(["python", temp_filename], input_data=input_data)
+                print("python3 -> ")
+                print("a_o -> ", actual_output)
+                print("err_o -> ", error_output)
 
             # Check if syntax or version errors occurred
             if error_output != '':
@@ -92,10 +109,15 @@ def run_python_code(data):
                 continue  # Try the other version
             else:
                 final_lang = attempt_lang
+                print("final_lang -> ", final_lang)
                 success = True
                 if final_lang != lang:
+                    print("same lang")
                     data['lang'] = attempt_lang
                     print(f"{data['src_uid']}'s lang is changed to {final_lang}. \n")
+                else:
+                    print("final_lang -> ", final_lang)
+                    print("lang -> ", lang)
                 break  # Stop trying other versions
 
         if not success:
@@ -145,6 +167,10 @@ def run_python_code(data):
                 break
     finally:
         os.remove(temp_filename)
+        print("------------------------- (results)")
+        print(results)
+        print("------------------------- (results)")
+        print("DONE!!!")
 
     return results
 
@@ -174,7 +200,12 @@ def execute_command(command, input_data=None):
 
 def evaluate_code(json_input):
     """Evaluates a Python code snippet based on the provided JSON input."""
+    
+    print("Inside evaluate_code")
     data = json.loads(json_input)
+    print("----------------------- (data):")
+    print(data)
+    print("----------------------- (data):")
     evaluation_results = run_python_code(data)
 
     # Construct evaluation record
@@ -189,16 +220,31 @@ def evaluate_code(json_input):
 
 def load_json_from_markdown(markdown_string):
     """Extracts and loads JSON from a Markdown code block."""
+    # print("I am inside load_json_from_markdown")
+    # print("____________________________________")
+    # print(markdown_string)
+    # print("____________________________________")
     json_match = re.search(r'```json\s*([\s\S]*?)\s*```', markdown_string)
+    # print("json match _________________________________")
+    # print(json_match)
+    # print(json.loads(json_match.group(1).strip())[0]["target_code"])
+    # print("json match _________________________________")
     if json_match:
         json_string = json_match.group(1).strip()
+        print("I am here :)")
         try:
             return json.loads(json_string)
         except json.JSONDecodeError as e:
             print(f"JSONDecodeError: {e}")
             return None
     else:
-        return None
+        print("I am here (else) :)")
+        json_string = json.loads(markdown_string)
+        print("--------------------------- (json_match_else_part)")
+        print(json_string)
+        print("--------------------------- (json_match_else_part)")
+        # return None
+        return json_string
 
 def count_passed_problems(results_path):
     """Counts the number of passed problems based on execution results."""
@@ -258,14 +304,16 @@ def main():
                 code_key = f"program_synthesis_{i}"
                 if code_key in item and item[code_key]:
                     try:
+                        print("************ -> ", code_key)
                         code_to_evaluate = json.dumps({
-                            "source_code": load_json_from_markdown(item[code_key])[0]["target code"],
+                            "source_code": load_json_from_markdown(item[code_key])[0]["target_code"],
                             "testcases": item["testcases"],
                             "lang_cluster": item["lang_cluster"],
                             "lang": load_json_from_markdown(item[code_key])[0]["version"],
                             "src_uid": item["src_uid"],
                             "difficulty": item["difficulty"]
                         })
+                        print("************ (code to evaluate) -> ", code_to_evaluate)
                         evaluation_result = evaluate_code(code_to_evaluate)
                         pass_flag = all(
                             outcome["exec_outcome"] == "PASSED" for outcome in evaluation_result["exec_outcome"])
