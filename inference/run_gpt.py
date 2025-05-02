@@ -111,20 +111,60 @@ def add_program_synthesis(example):
     prob_desc_notes = example['notes']
     lang = example['lang_cluster'].lower()
 
-    prompt = f"""
-As a professional code developer with years of experience, please provide the corresponding code solution based on the problem description. Detailed information is given below:
-1. Problem description: {prob_desc_description}
-2. Input specification: {prob_desc_input_spec}
-3. Output specification: {prob_desc_output_spec}
-4. Sample inputs: {prob_desc_sample_inputs}
-5. Sample outputs: {prob_desc_sample_outputs}
-6. Sample explanations: {prob_desc_notes}
-7. Programming language: {lang} 
-8. support programming language version: {env_map[lang]}
-Please take care to minimize the use of complex header files.
+#     prompt = f"""
+# As a professional code developer with years of experience, please provide the corresponding code solution based on the problem description. Detailed information is given below:
+# 1. Problem description: {prob_desc_description}
+# 2. Input specification: {prob_desc_input_spec}
+# 3. Output specification: {prob_desc_output_spec}
+# 4. Sample inputs: {prob_desc_sample_inputs}
+# 5. Sample outputs: {prob_desc_sample_outputs}
+# 6. Sample explanations: {prob_desc_notes}
+# 7. Programming language: {lang} 
+# 8. support programming language version: {env_map[lang]}
+# Please take care to minimize the use of complex header files.
 
-Respond should only with a string in the following JSON format:
-[{{"version": specific version used in the programming language, "target code":  the code you produced in the respective programming language version."}}] """
+# Respond should only with a string in the following JSON format:
+# [{{"version": specific version used in the programming language, "target code":  the code you produced in the respective programming language version."}}] """
+
+
+    prompt = f"""
+You are an expert programmer and technical writer. Follow the instructions exactly. Use the JSON schema. Think and reason about the problem step-by-step. Generate working code that fulfills the specification under ⁠ INPUT ⁠ and outputs exactly the JSON defined in ⁠ OUTPUT FORMAT ⁠. Do not include any extra wordings and explanations.
+
+### Problem Context
+'''
+1. Problem Description: {prob_desc_description}
+2. Input Specification: {prob_desc_input_spec}
+3. Output Specification: {prob_desc_output_spec}
+4. Sample Cases:
+   - Input: {prob_desc_sample_inputs}
+   - Expected Output: {prob_desc_sample_outputs}
+   - Explanation: {prob_desc_notes}
+5. Target Language: {lang} {env_map[lang]}
+6. Code Style: {lang} best practices and PEP8/equivalent style guidelines
+'''
+---
+
+## Important Instructions to keep in mind
+Understand the input task precisely.
+Explain your reasoning briefly before writing the code.
+Write the exact code inside the code block.
+Ensure the output is only the code block, no extra commentary.
+
+---
+
+## Output Format Specification
+'''
+[{{
+  "version": "<exact_language_version>",
+  "target_code": "<complete_solution_code>"
+}}]
+'''
+### Example Response
+[{{
+  "version": "Python 3.11",
+  "target_code": "def solution(args):\n    ..."
+}}]
+"""
 
     logging.info('problem src_id: ' + str(prob_uid))
     logging.info(prompt)
@@ -168,7 +208,7 @@ Respond should only with a string in the following JSON format:
 
 
 def main():
-    load_path = Path(__file__).parent.parent.parent / Path('data') / Path(args.data_load_name)
+    load_path = Path(__file__).parent.parent / Path('data') / Path(args.data_load_name)
     save_path = Path(__file__).parent / Path('results') / Path(args.result_save_name)
 
     dataset = load_dataset('json', split='train', data_files=str(load_path))
