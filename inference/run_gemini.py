@@ -51,20 +51,69 @@ def add_program_synthesis(example, client):
     prob_desc_notes = example['notes']
     lang = example['lang_cluster'].lower()
 
-    prompt = f"""
-As a professional code developer with years of experience, please provide the corresponding code solution based on the problem description. Detailed information is given below:
-1. Problem description: {prob_desc_description}
-2. Input specification: {prob_desc_input_spec}
-3. Output specification: {prob_desc_output_spec}
-4. Sample inputs: {prob_desc_sample_inputs}
-5. Sample outputs: {prob_desc_sample_outputs}
-6. Sample explanations: {prob_desc_notes}
-7. Programming language: {lang}
-8. support programming language version: {env_map[lang]}
-Please take care to minimize the use of complex header files.
+#     prompt = f"""
+# As a professional code developer with years of experience, please provide the corresponding code solution based on the problem description. Detailed information is given below:
+# 1. Problem description: {prob_desc_description}
+# 2. Input specification: {prob_desc_input_spec}
+# 3. Output specification: {prob_desc_output_spec}
+# 4. Sample inputs: {prob_desc_sample_inputs}
+# 5. Sample outputs: {prob_desc_sample_outputs}
+# 6. Sample explanations: {prob_desc_notes}
+# 7. Programming language: {lang}
+# 8. support programming language version: {env_map[lang]}
+# Please take care to minimize the use of complex header files.
 
-Respond should only with a string in the following JSON format:
-[{{"version": specific version used in the programming language, "target code": the code you produced in the respective programming language version."}}] """
+# Respond should only with a string in the following JSON format:
+# [{{"version": specific version used in the programming language, "target code": the code you produced in the respective programming language version."}}] """
+
+    prompt = f"""
+You are a highly reliable code-generation assistant. Follow instructions exactly, use the JSON schema, and expose your reasoning.
+---
+
+## 1. Role
+You are an expert programmer and technical writer. Do as I say.
+
+---
+
+## 2. Task Description
+Generate working code that fulfills the specification under ⁠ INPUT ⁠ and outputs exactly the JSON defined in ⁠ OUTPUT FORMAT ⁠. Do not include any extra prose.
+
+### Problem Context
+'''
+1. Problem Description: {prob_desc_description}
+2. Input Specification: {prob_desc_input_spec}
+3. Output Specification: {prob_desc_output_spec}
+4. Sample Cases:
+   - Input: {prob_desc_sample_inputs}
+   - Expected Output: {prob_desc_sample_outputs}
+   - Explanation: {prob_desc_notes}
+5. Target Language: {lang} {env_map[lang]}
+6. Code Style: {lang} best practices and PEP8/equivalent style guidelines
+'''
+---
+
+## 3. Important Instructions to keep in mind
+Understand the input task precisely.
+Explain your reasoning briefly before writing the code.
+Write the exact code inside the code block.
+Ensure the output is only the code block, no extra commentary.
+
+---
+
+## 4. Output Format Specification
+'''
+[{{
+  "version": "<exact_language_version>",
+  "target_code": "<complete_solution_code>"
+}}]
+'''
+### Example Response
+[{{
+  "version": "Python 3.11",
+  "target_code": "def solution(args):\n    ..."
+}}]
+
+"""
 
     logging.info('problem src_id: ' + str(prob_uid))
     logging.info(prompt)
